@@ -1,0 +1,7 @@
+[package]
+name = "bucket_queue"
+version = "0.1.0"
+authors = ["Chris Patuzzo <chris@patuzzo.co.uk>"]
+edition = "2018"
+
+[dependencies]
