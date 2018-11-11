@@ -5,7 +5,9 @@ pub mod last_in_first_out;
 use super::*;
 
 pub trait Queue<B: Bucket> {
-    fn get_bucket_mut(&mut self, priority: usize) -> Option<&mut B>;
+    fn min_priority(&self) -> Option<usize>;
+    fn max_priority(&self) -> Option<usize>;
 
-    fn get_or_insert_bucket_mut(&mut self, priority: usize) -> &mut B;
+    fn bucket_for_adding(&mut self, priority: usize) -> &mut B;
+    fn bucket_for_removing(&mut self, priority: usize) -> Option<&mut B>;
 }

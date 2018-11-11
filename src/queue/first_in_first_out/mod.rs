@@ -2,11 +2,19 @@ use super::*;
 
 pub trait FirstInFirstOutQueue<B: FirstInFirstOutBucket>: Queue<B> {
     fn enqueue(&mut self, item: B::Item, priority: usize) {
-        self.get_or_insert_bucket_mut(priority).enqueue(item);
+        self.bucket_for_adding(priority).enqueue(item);
     }
 
     fn dequeue(&mut self, priority: usize) -> Option<B::Item> {
-        self.get_bucket_mut(priority)?.dequeue()
+        self.bucket_for_removing(priority)?.dequeue()
+    }
+
+    fn dequeue_min(&mut self) -> Option<B::Item> {
+        self.dequeue(self.min_priority()?)
+    }
+
+    fn dequeue_max(&mut self) -> Option<B::Item> {
+        self.dequeue(self.max_priority()?)
     }
 }
 
