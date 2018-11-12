@@ -74,7 +74,7 @@ impl SimpleIndex {
             }
         };
 
-        bucket.len()
+        bucket.len_bucket()
     }
 
     fn find_next_priority<I, B>(iter: I, buckets: &Vec<Option<B>>) -> Option<usize>
@@ -82,7 +82,7 @@ impl SimpleIndex {
     {
         for i in iter {
             if let Some(bucket) = &buckets[i] {
-                if !bucket.is_empty() {
+                if !bucket.is_empty_bucket() {
                     return Some(i);
                 }
             }

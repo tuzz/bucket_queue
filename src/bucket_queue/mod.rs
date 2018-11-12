@@ -21,22 +21,19 @@ impl<B: Bucket, I: Index> BucketQueue<B, I> {
             self.buckets.get_unchecked_mut(priority)
         }
     }
+
+    fn len(&self) -> usize {
+        self.index.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.index.is_empty()
+    }
 }
 
 impl<B: Bucket> Queue<B> for BucketQueue<B> {
-    fn bucket_for_adding(&mut self, priority: usize) -> &mut B {
-        self.index.add(priority, &self.buckets);
-
-        self.grow(priority);
-
-        self.get_bucket_unchecked(priority)
-            .get_or_insert_with(|| B::new())
-    }
-
-    fn bucket_for_removing(&mut self, priority: usize) -> Option<&mut B> {
-        self.index.remove(priority, &self.buckets);
-
-        self.buckets.get_mut(priority)?.as_mut()
+    fn new_queue() -> Self {
+        Self::new()
     }
 
     fn min_priority(&self) -> Option<usize> {
@@ -47,12 +44,43 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.index.max()
     }
 
-    fn len(&self) -> usize {
-        self.index.len()
+    fn bucket_for_adding(&mut self, priority: usize) -> &mut B {
+        self.index.add(priority, &self.buckets);
+
+        self.grow(priority);
+
+        self.get_bucket_unchecked(priority)
+            .get_or_insert_with(|| B::new_bucket())
     }
 
-    fn is_empty(&self) -> bool {
-        self.index.is_empty()
+    fn bucket_for_removing(&mut self, priority: usize) -> Option<&mut B> {
+        self.index.remove(priority, &self.buckets);
+
+        self.buckets.get_mut(priority)?.as_mut()
+    }
+
+    fn len_queue(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty_queue(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+impl<T, B: Bucket<Item=T>> Bucket for BucketQueue<B> {
+    type Item = T;
+
+    fn new_bucket() -> Self {
+        Self::new()
+    }
+
+    fn len_bucket(&self) -> usize {
+        self.len()
+    }
+
+    fn is_empty_bucket(&self) -> bool {
+        self.is_empty()
     }
 }
 

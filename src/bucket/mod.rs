@@ -5,11 +5,11 @@ pub mod last_in_first_out;
 pub trait Bucket {
     type Item;
 
-    fn new() -> Self;
+    fn new_bucket() -> Self;
 
-    fn len(&self) -> usize;
+    fn len_bucket(&self) -> usize;
 
-    fn is_empty(&self) -> bool;
+    fn is_empty_bucket(&self) -> bool;
 }
 
 // -----------------------------------------------------------------
@@ -21,15 +21,15 @@ use std::collections::VecDeque;
 impl<T> Bucket for VecDeque<T> {
     type Item = T;
 
-    fn new() -> Self {
-        VecDeque::new()
+    fn new_bucket() -> Self {
+        Self::new()
     }
 
-    fn len(&self) -> usize {
+    fn len_bucket(&self) -> usize {
         self.len()
     }
 
-    fn is_empty(&self) -> bool {
+    fn is_empty_bucket(&self) -> bool {
         self.is_empty()
     }
 }
@@ -37,15 +37,15 @@ impl<T> Bucket for VecDeque<T> {
 impl<T> Bucket for Vec<T> {
     type Item = T;
 
-    fn new() -> Self {
-        Vec::new()
+    fn new_bucket() -> Self {
+        Self::new()
     }
 
-    fn len(&self) -> usize {
+    fn len_bucket(&self) -> usize {
         self.len()
     }
 
-    fn is_empty(&self) -> bool {
+    fn is_empty_bucket(&self) -> bool {
         self.is_empty()
     }
 }

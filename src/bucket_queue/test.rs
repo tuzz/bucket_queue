@@ -295,3 +295,26 @@ mod is_empty {
         assert_eq!(subject.is_empty(), true);
     }
 }
+
+mod nested_bucket_queue {
+    use super::*;
+
+    #[test]
+    fn it_supports_using_a_bucket_queue_as_a_type_of_bucket() {
+        let mut subject = Subject::<Subject<Vec<&'static str>>>::new();
+
+        subject.bucket_for_adding(0).push("first", 0);
+        subject.bucket_for_adding(0).push("second", 1);
+        subject.bucket_for_adding(1).push("third", 0);
+
+        assert_eq!(subject.len(), 3);
+
+        let bucket = subject.bucket_for_removing(0).unwrap();
+        assert_eq!(bucket.pop_min(), Some("first"));
+        assert_eq!(subject.len(), 2);
+
+        let max = subject.max_priority().unwrap();
+        let bucket = subject.bucket_for_removing(max).unwrap();
+        assert_eq!(bucket.pop_max(), Some("third"));
+    }
+}
