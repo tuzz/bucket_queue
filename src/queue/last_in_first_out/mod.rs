@@ -23,3 +23,14 @@ pub trait LastInFirstOutQueue<B: LastInFirstOutBucket>: Queue<B> {
 // -----------------------------------------------------------------------------
 
 impl<B: LastInFirstOutBucket> LastInFirstOutQueue<B> for BucketQueue<B> { }
+
+
+// ---------------------------------------------------------------------
+// Implement LastInFirstOutQueue for DeferredBucket to support deferral:
+// ---------------------------------------------------------------------
+
+impl<'a, Q, B, C> LastInFirstOutQueue<C> for DeferredBucket<'a, Q, B>
+    where Q: Queue<B>,
+          B: Bucket + Queue<C>,
+          C: LastInFirstOutBucket,
+{ }

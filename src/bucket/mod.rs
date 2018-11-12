@@ -2,6 +2,8 @@ pub mod double_ended;
 pub mod first_in_first_out;
 pub mod last_in_first_out;
 
+use super::*;
+
 pub trait Bucket {
     type Item;
 

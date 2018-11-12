@@ -39,3 +39,14 @@ pub trait DoubleEndedQueue<B: DoubleEndedBucket>: Queue<B> {
 // -----------------------------------------------------------------------
 
 impl<B: DoubleEndedBucket> DoubleEndedQueue<B> for BucketQueue<B> { }
+
+
+// ------------------------------------------------------------------
+// Implement DoubleEndedQueue for DeferredBucket to support deferral:
+// ------------------------------------------------------------------
+
+impl<'a, Q, B, C> DoubleEndedQueue<C> for DeferredBucket<'a, Q, B>
+    where Q: Queue<B>,
+          B: Bucket + Queue<C>,
+          C: DoubleEndedBucket,
+{ }

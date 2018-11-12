@@ -59,6 +59,10 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.buckets.get_mut(priority)?.as_mut()
     }
 
+    fn bucket_for_peeking(&self, priority: usize) -> Option<&B> {
+        self.buckets.get(priority)?.as_ref()
+    }
+
     fn len_queue(&self) -> usize {
         self.len()
     }

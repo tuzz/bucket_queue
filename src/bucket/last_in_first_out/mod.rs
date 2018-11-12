@@ -19,3 +19,21 @@ impl<T> LastInFirstOutBucket for Vec<T> {
         self.pop()
     }
 }
+
+
+// ----------------------------------------------------------------------
+// Implement LastInFirstOutBucket for DeferredBucket to support deferral:
+// ----------------------------------------------------------------------
+
+impl<'a, Q, B> LastInFirstOutBucket for DeferredBucket<'a, Q, B>
+    where Q: LastInFirstOutQueue<B>,
+          B: LastInFirstOutBucket,
+{
+    fn push(&mut self, item: Self::Item) {
+        self.add().push(item)
+    }
+
+    fn pop(&mut self) -> Option<Self::Item> {
+        self.remove()?.pop()
+    }
+}

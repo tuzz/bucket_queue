@@ -77,6 +77,33 @@ mod double_ended {
         assert_eq!(subject.pop_back_max(), Some("third"));
         assert_eq!(subject.pop_front_max(), None);
     }
+
+    #[test]
+    fn it_can_set_the_priority_then_push_and_pop_front_and_back() {
+        let mut subject = Subject::<VecDeque<&'static str>>::new();
+
+        subject.bucket(0).push_back("first");
+        subject.bucket(1).push_back("second");
+        subject.bucket(0).push_front("third");
+        subject.bucket(1).push_back("fourth");
+        subject.bucket(1).push_front("fifth");
+
+        // Current state of bucket queue:
+        //   0: third, first
+        //   1: fifth, second, fourth
+
+        assert_eq!(subject.bucket(0).pop_back(), Some("first"));
+        assert_eq!(subject.bucket(0).pop_front(), Some("third"));
+        assert_eq!(subject.bucket(0).pop_back(), None);
+
+        assert_eq!(subject.bucket(1).pop_front(), Some("fifth"));
+        assert_eq!(subject.bucket(1).pop_back(), Some("fourth"));
+        assert_eq!(subject.bucket(1).pop_back(), Some("second"));
+        assert_eq!(subject.bucket(1).pop_front(), None);
+
+        assert_eq!(subject.bucket(2).pop_front(), None);
+        assert_eq!(subject.bucket(3).pop_back(), None);
+    }
 }
 
 mod first_in_first_out {
@@ -128,6 +155,25 @@ mod first_in_first_out {
         assert_eq!(subject.dequeue_max(), Some("third"));
         assert_eq!(subject.dequeue_max(), None);
     }
+
+    #[test]
+    fn it_can_set_the_priority_then_enqueue_and_dequeue() {
+        let mut subject = Subject::<VecDeque<&'static str>>::new();
+
+        subject.bucket(0).enqueue("first");
+        subject.bucket(1).enqueue("second");
+        subject.bucket(0).enqueue("third");
+
+        assert_eq!(subject.bucket(1).dequeue(), Some("second"));
+        assert_eq!(subject.bucket(1).dequeue(), None);
+
+        assert_eq!(subject.bucket(0).dequeue(), Some("first"));
+        assert_eq!(subject.bucket(0).dequeue(), Some("third"));
+        assert_eq!(subject.bucket(0).dequeue(), None);
+
+        assert_eq!(subject.bucket(2).dequeue(), None);
+        assert_eq!(subject.bucket(3).dequeue(), None);
+    }
 }
 
 mod last_in_first_out {
@@ -178,6 +224,25 @@ mod last_in_first_out {
         assert_eq!(subject.pop_max(), Some("third"));
         assert_eq!(subject.pop_max(), Some("first"));
         assert_eq!(subject.pop_max(), None);
+    }
+
+    #[test]
+    fn it_can_set_the_priority_then_push_and_pop() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.bucket(0).push("first");
+        subject.bucket(1).push("second");
+        subject.bucket(0).push("third");
+
+        assert_eq!(subject.bucket(1).pop(), Some("second"));
+        assert_eq!(subject.bucket(1).pop(), None);
+
+        assert_eq!(subject.bucket(0).pop(), Some("third"));
+        assert_eq!(subject.bucket(0).pop(), Some("first"));
+        assert_eq!(subject.bucket(0).pop(), None);
+
+        assert_eq!(subject.bucket(2).pop(), None);
+        assert_eq!(subject.bucket(3).pop(), None);
     }
 }
 
@@ -296,6 +361,58 @@ mod is_empty {
     }
 }
 
+mod deferrals {
+    use super::*;
+
+    #[test]
+    fn it_adds_to_bucket_zero_if_there_are_no_buckets() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.min_bucket().push("first");
+        subject.max_bucket().push("second");
+
+        assert_eq!(subject.min_priority(), Some(0));
+        assert_eq!(subject.max_priority(), Some(0));
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_prevents_adding_to_the_bucket_more_than_once() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+        let mut bucket = subject.bucket(0);
+
+        bucket.push("first");
+        bucket.push("second"); // The second push should panic.
+    }
+
+    #[test]
+    #[should_panic]
+    fn it_prevents_removing_from_the_bucket_more_than_once() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 0);
+
+        let mut bucket = subject.bucket(0);
+
+        bucket.pop();
+        bucket.pop(); // The second pop should panic.
+    }
+
+    #[test]
+    fn it_can_ask_questions_of_buckets_more_than_once() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+
+        let bucket = subject.bucket(0);
+
+        assert_eq!(bucket.len_bucket(), 1);
+        assert_eq!(bucket.is_empty_bucket(), false);
+        assert_eq!(bucket.len_bucket(), 1);
+    }
+}
+
 mod nested_bucket_queue {
     use super::*;
 
@@ -309,12 +426,51 @@ mod nested_bucket_queue {
 
         assert_eq!(subject.len(), 3);
 
-        let bucket = subject.bucket_for_removing(0).unwrap();
-        assert_eq!(bucket.pop_min(), Some("first"));
+        let first = subject.bucket_for_removing(0).unwrap().pop_min();
+        assert_eq!(first, Some("first"));
         assert_eq!(subject.len(), 2);
 
         let max = subject.max_priority().unwrap();
         let bucket = subject.bucket_for_removing(max).unwrap();
         assert_eq!(bucket.pop_max(), Some("third"));
+    }
+
+    #[test]
+    fn it_supports_accessing_nested_buckets_via_deferrals() {
+        let mut subject = Subject::<Subject<Vec<&'static str>>>::new();
+
+        subject.bucket(0).push("first", 0);
+        subject.bucket(0).push("second", 1);
+        subject.bucket(1).bucket(0).push("third");
+
+        assert_eq!(subject.len(), 3);
+
+        assert_eq!(subject.bucket(0).pop_min(), Some("first"));
+        assert_eq!(subject.len(), 2);
+
+        assert_eq!(subject.max_bucket().pop_max(), Some("third"));
+        assert_eq!(subject.len(), 1);
+
+        assert_eq!(subject.min_bucket().pop_min(), Some("second"));
+        assert_eq!(subject.len(), 0);
+    }
+
+    #[test]
+    fn it_can_be_arbitrarily_nested() {
+        let mut subject = Subject::<Subject<Subject<Vec<&'static str>>>>::new();
+
+        subject.bucket(0).bucket(1).push("first", 2);
+        subject.bucket(3).bucket(4).bucket(5).push("second");
+        subject.bucket(3).bucket(6).bucket(7).push("third");
+
+        assert_eq!(subject.len(), 3);
+
+        assert_eq!(subject.max_priority(), Some(3));
+        assert_eq!(subject.min_bucket().min_priority(), Some(1));
+        assert_eq!(subject.max_bucket().min_bucket().max_priority(), Some(5));
+
+        assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("second"));
+        assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("third"));
+        assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("first"));
     }
 }

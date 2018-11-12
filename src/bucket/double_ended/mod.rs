@@ -31,3 +31,29 @@ impl<T> DoubleEndedBucket for VecDeque<T> {
         self.pop_front()
     }
 }
+
+
+// -------------------------------------------------------------------
+// Implement DoubleEndedBucket for DeferredBucket to support deferral:
+// -------------------------------------------------------------------
+
+impl<'a, Q, B> DoubleEndedBucket for DeferredBucket<'a, Q, B>
+    where Q: DoubleEndedQueue<B>,
+          B: DoubleEndedBucket,
+{
+    fn push_back(&mut self, item: Self::Item) {
+        self.add().push_back(item)
+    }
+
+    fn push_front(&mut self, item: Self::Item) {
+        self.add().push_front(item)
+    }
+
+    fn pop_back(&mut self) -> Option<Self::Item> {
+        self.remove()?.pop_back()
+    }
+
+    fn pop_front(&mut self) -> Option<Self::Item> {
+        self.remove()?.pop_front()
+    }
+}

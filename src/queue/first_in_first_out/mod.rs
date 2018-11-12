@@ -23,3 +23,14 @@ pub trait FirstInFirstOutQueue<B: FirstInFirstOutBucket>: Queue<B> {
 // -------------------------------------------------------------------------------
 
 impl<B: FirstInFirstOutBucket> FirstInFirstOutQueue<B> for BucketQueue<B> { }
+
+
+// ----------------------------------------------------------------------
+// Implement FirstInFirstOutQueue for DeferredBucket to support deferral:
+// ----------------------------------------------------------------------
+
+impl<'a, Q, B, C> FirstInFirstOutQueue<C> for DeferredBucket<'a, Q, B>
+    where Q: Queue<B>,
+          B: Bucket + Queue<C>,
+          C: FirstInFirstOutBucket,
+{ }

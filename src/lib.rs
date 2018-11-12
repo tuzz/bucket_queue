@@ -1,6 +1,7 @@
 pub mod bucket;
 pub mod queue;
 pub mod index;
+pub mod deferred;
 pub mod bucket_queue;
 
 pub use self::bucket::Bucket;
@@ -15,5 +16,8 @@ pub use self::queue::last_in_first_out::LastInFirstOutQueue;
 
 pub use self::index::Index;
 pub use self::index::simple::SimpleIndex;
+
+pub use self::deferred::Deferred;
+pub use self::deferred::bucket::DeferredBucket;
 
 pub use self::bucket_queue::BucketQueue;

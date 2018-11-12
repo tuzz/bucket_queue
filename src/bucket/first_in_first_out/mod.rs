@@ -21,3 +21,21 @@ impl<T> FirstInFirstOutBucket for VecDeque<T> {
         self.pop_front()
     }
 }
+
+
+// -----------------------------------------------------------------------
+// Implement FirstInFirstOutBucket for DeferredBucket to support deferral:
+// -----------------------------------------------------------------------
+
+impl<'a, Q, B> FirstInFirstOutBucket for DeferredBucket<'a, Q, B>
+    where Q: FirstInFirstOutQueue<B>,
+          B: FirstInFirstOutBucket,
+{
+    fn enqueue(&mut self, item: Self::Item) {
+        self.add().enqueue(item)
+    }
+
+    fn dequeue(&mut self) -> Option<Self::Item> {
+        self.remove()?.dequeue()
+    }
+}
