@@ -10,4 +10,8 @@ pub trait Index {
 
     fn min(&self) -> Option<usize>;
     fn max(&self) -> Option<usize>;
+
+    fn len(&self) -> usize;
+
+    fn is_empty(&self) -> bool;
 }

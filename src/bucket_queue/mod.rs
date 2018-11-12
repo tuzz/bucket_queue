@@ -24,14 +24,6 @@ impl<B: Bucket, I: Index> BucketQueue<B, I> {
 }
 
 impl<B: Bucket> Queue<B> for BucketQueue<B> {
-    fn min_priority(&self) -> Option<usize> {
-        self.index.min()
-    }
-
-    fn max_priority(&self) -> Option<usize> {
-        self.index.max()
-    }
-
     fn bucket_for_adding(&mut self, priority: usize) -> &mut B {
         self.index.add(priority, &self.buckets);
 
@@ -45,6 +37,22 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.index.remove(priority, &self.buckets);
 
         self.buckets.get_mut(priority)?.as_mut()
+    }
+
+    fn min_priority(&self) -> Option<usize> {
+        self.index.min()
+    }
+
+    fn max_priority(&self) -> Option<usize> {
+        self.index.max()
+    }
+
+    fn len(&self) -> usize {
+        self.index.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.index.is_empty()
     }
 }
 

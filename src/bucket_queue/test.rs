@@ -243,3 +243,55 @@ mod min_and_max_priority {
         assert_eq!(subject.max_priority(), None);
     }
 }
+
+mod len {
+    use super::*;
+
+    #[test]
+    fn it_returns_the_number_of_enqueued_items() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        assert_eq!(subject.len(), 0);
+
+        subject.push("first", 0);
+        assert_eq!(subject.len(), 1);
+
+        subject.push("second", 1);
+        assert_eq!(subject.len(), 2);
+
+        subject.pop_min();
+        assert_eq!(subject.len(), 1);
+
+        subject.pop_min();
+        assert_eq!(subject.len(), 0);
+
+        subject.pop_min();
+        assert_eq!(subject.len(), 0);
+    }
+}
+
+mod is_empty {
+    use super::*;
+
+    #[test]
+    fn it_returns_true_if_no_items_are_enqueued() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        assert_eq!(subject.is_empty(), true);
+
+        subject.push("first", 0);
+        assert_eq!(subject.is_empty(), false);
+
+        subject.push("second", 1);
+        assert_eq!(subject.is_empty(), false);
+
+        subject.pop_min();
+        assert_eq!(subject.is_empty(), false);
+
+        subject.pop_min();
+        assert_eq!(subject.is_empty(), true);
+
+        subject.pop_min();
+        assert_eq!(subject.is_empty(), true);
+    }
+}
