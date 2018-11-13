@@ -1,8 +1,9 @@
-use super::*;
+extern crate bucket_queue;
+
+use bucket_queue::*;
+use std::collections::VecDeque;
 
 type Subject<B> = BucketQueue<B>;
-
-use std::collections::VecDeque;
 
 mod double_ended {
     use super::*;

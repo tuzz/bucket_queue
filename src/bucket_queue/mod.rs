@@ -10,6 +10,14 @@ impl<B: Bucket, I: Index> BucketQueue<B, I> {
         Self { buckets: Vec::new(), index: I::new() }
     }
 
+    pub fn len(&self) -> usize {
+        self.index.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.index.is_empty()
+    }
+
     fn grow(&mut self, priority: usize) {
         for _ in self.buckets.len()..=priority {
             self.buckets.push(None);
@@ -20,14 +28,6 @@ impl<B: Bucket, I: Index> BucketQueue<B, I> {
         unsafe {
             self.buckets.get_unchecked_mut(priority)
         }
-    }
-
-    fn len(&self) -> usize {
-        self.index.len()
-    }
-
-    fn is_empty(&self) -> bool {
-        self.index.is_empty()
     }
 }
 
@@ -87,6 +87,3 @@ impl<T, B: Bucket<Item=T>> Bucket for BucketQueue<B> {
         self.is_empty()
     }
 }
-
-#[cfg(test)]
-mod test;
