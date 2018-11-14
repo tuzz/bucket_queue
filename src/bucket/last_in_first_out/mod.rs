@@ -30,10 +30,10 @@ impl<'a, Q, B> LastInFirstOutBucket for DeferredBucket<'a, Q, B>
           B: LastInFirstOutBucket,
 {
     fn push(&mut self, item: Self::Item) {
-        self.add().push(item)
+        self.adding().push(item)
     }
 
     fn pop(&mut self) -> Option<Self::Item> {
-        self.remove()?.pop()
+        self.removing()?.pop()
     }
 }

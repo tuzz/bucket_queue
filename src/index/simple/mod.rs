@@ -23,18 +23,16 @@ impl Index for SimpleIndex {
     fn remove<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>) {
         self.len = self.len.saturating_sub(1);
 
-        if Self::size_of_bucket(priority, buckets) > 1 {
-            return;
+        if Self::size_of_bucket(priority, buckets) == 1 {
+            self.set_new_min_and_max(priority, buckets);
         }
+    }
 
-        if let (Some(min), Some(max)) = (self.min, self.max) {
-            if priority == min {
-                self.min = Self::find_next_priority((min + 1)..=max, buckets);
-            }
+    fn removed_n<B: Bucket>(&mut self, n: usize, priority: usize, buckets: &Vec<Option<B>>) {
+        self.len = self.len.saturating_sub(n);
 
-            if priority == max {
-                self.max = Self::find_next_priority((min..max).rev(), buckets);
-            }
+        if Self::bucket_is_empty(priority, buckets) {
+            self.set_new_min_and_max(priority, buckets);
         }
     }
 
@@ -66,15 +64,31 @@ impl SimpleIndex {
     }
 
     fn size_of_bucket<B: Bucket>(priority: usize, buckets: &Vec<Option<B>>) -> usize {
-        let bucket = match buckets.get(priority) {
-            None => return 0,
-            Some(option) => match option {
-                None => return 0,
-                Some(bucket) => bucket,
-            }
-        };
+        if let Some(Some(bucket)) = buckets.get(priority) {
+            bucket.len_bucket()
+        } else {
+            0
+        }
+    }
 
-        bucket.len_bucket()
+    fn bucket_is_empty<B: Bucket>(priority: usize, buckets: &Vec<Option<B>>) -> bool {
+        if let Some(Some(bucket)) = buckets.get(priority) {
+            bucket.is_empty_bucket()
+        } else {
+            true
+        }
+    }
+
+    fn set_new_min_and_max<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>) {
+        if let (Some(min), Some(max)) = (self.min, self.max) {
+            if priority == min {
+                self.min = Self::find_next_priority((min + 1)..=max, buckets);
+            }
+
+            if priority == max {
+                self.max = Self::find_next_priority((min..max).rev(), buckets);
+            }
+        }
     }
 
     fn find_next_priority<I, B>(iter: I, buckets: &Vec<Option<B>>) -> Option<usize>

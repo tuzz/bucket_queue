@@ -12,10 +12,13 @@ pub trait Queue<B: Bucket> {
 
     fn bucket_for_adding(&mut self, priority: usize) -> &mut B;
     fn bucket_for_removing(&mut self, priority: usize) -> Option<&mut B>;
-
     fn bucket_for_peeking(&self, priority: usize) -> Option<&B>;
+    fn bucket_for_pruning(&mut self, priority: usize) -> Option<&mut B>;
+
+    fn items_pruned(&mut self, number_of_items: usize, priority: usize);
 
     fn len_queue(&self) -> usize;
-
     fn is_empty_queue(&self) -> bool;
+
+    fn prune(&mut self, priority: usize);
 }

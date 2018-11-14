@@ -63,6 +63,17 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.buckets.get(priority)?.as_ref()
     }
 
+    fn bucket_for_pruning(&mut self, priority: usize) -> Option<&mut B> {
+        // The index is not automatically updated as there is no way to tell how
+        // many items will be removed. Instead, #items_pruned must be called.
+
+        self.buckets.get_mut(priority)?.as_mut()
+    }
+
+    fn items_pruned(&mut self, number_of_items: usize, priority: usize) {
+        self.index.removed_n(number_of_items, priority, &self.buckets);
+    }
+
     fn len_queue(&self) -> usize {
         self.len()
     }
@@ -70,9 +81,19 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
     fn is_empty_queue(&self) -> bool {
         self.is_empty()
     }
+
+    fn prune(&mut self, priority: usize) {
+        if let Some(Some(bucket)) = self.buckets.get_mut(priority) {
+            let bucket_size = bucket.len_bucket();
+
+            bucket.clear();
+
+            self.items_pruned(bucket_size, priority);
+        }
+    }
 }
 
-impl<T, B: Bucket<Item=T>> Bucket for BucketQueue<B> {
+impl<T, B: Bucket<Item=T>, I: Index> Bucket for BucketQueue<B, I> {
     type Item = T;
 
     fn new_bucket() -> Self {
@@ -85,5 +106,10 @@ impl<T, B: Bucket<Item=T>> Bucket for BucketQueue<B> {
 
     fn is_empty_bucket(&self) -> bool {
         self.is_empty()
+    }
+
+    fn clear(&mut self) {
+        self.buckets = Vec::new();
+        self.index = I::new();
     }
 }

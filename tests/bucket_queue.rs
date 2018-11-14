@@ -362,6 +362,63 @@ mod is_empty {
     }
 }
 
+mod clear {
+    use super::*;
+
+    #[test]
+    fn it_removes_all_items_from_the_bucket_queue() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        subject.clear();
+
+        assert_eq!(subject.len(), 0);
+        assert_eq!(subject.is_empty(), true);
+        assert_eq!(subject.pop_min(), None);
+    }
+
+    #[test]
+    fn it_can_clear_deferred_buckets() { // This is equivalent to pruning.
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        subject.bucket(0).clear();
+
+        assert_eq!(subject.len(), 1);
+        assert_eq!(subject.is_empty(), false);
+
+        assert_eq!(subject.pop_min(), Some("second"));
+        assert_eq!(subject.pop_min(), None);
+    }
+}
+
+mod prune {
+    use super::*;
+
+    #[test]
+    fn it_removes_all_items_from_a_bucket_in_the_bucket_queue() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        subject.prune(0);
+
+        assert_eq!(subject.len(), 1);
+        assert_eq!(subject.is_empty(), false);
+
+        assert_eq!(subject.pop_min(), Some("second"));
+        assert_eq!(subject.pop_min(), None);
+    }
+}
+
 mod deferrals {
     use super::*;
 
@@ -457,6 +514,24 @@ mod nested_bucket_queue {
     }
 
     #[test]
+    fn it_supports_pruning_nested_buckets_via_deferrals() {
+        let mut subject = Subject::<Subject<Vec<&'static str>>>::new();
+
+        subject.bucket(0).push("first", 0);
+        subject.bucket(0).push("second", 1);
+        subject.bucket(0).push("third", 1);
+        subject.bucket(1).push("fourth", 0);
+
+        subject.bucket(0).prune(1);
+
+        assert_eq!(subject.len(), 2);
+
+        assert_eq!(subject.min_bucket().pop_min(), Some("first"));
+        assert_eq!(subject.min_bucket().pop_min(), Some("fourth"));
+        assert_eq!(subject.min_bucket().pop_min(), None);
+    }
+
+    #[test]
     fn it_can_be_arbitrarily_nested() {
         let mut subject = Subject::<Subject<Subject<Vec<&'static str>>>>::new();
 
@@ -473,5 +548,38 @@ mod nested_bucket_queue {
         assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("second"));
         assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("third"));
         assert_eq!(subject.max_bucket().min_bucket().pop_min(), Some("first"));
+    }
+
+    #[test]
+    fn it_can_prune_arbitrarily_nested_buckets_via_deferrals() {
+        let mut subject = Subject::<Subject<Subject<Vec<&'static str>>>>::new();
+
+        subject.bucket(0).bucket(1).bucket(0).push("first");
+        subject.bucket(0).bucket(1).bucket(0).push("second");
+        subject.bucket(0).bucket(1).bucket(1).push("third");
+        subject.bucket(0).bucket(2).bucket(0).push("fourth");
+        subject.bucket(0).bucket(2).bucket(0).push("fifth");
+        subject.bucket(1).bucket(0).bucket(0).push("sixth");
+
+        subject.bucket(0).bucket(1).prune(0);
+        assert_eq!(subject.len(), 4);
+        assert_eq!(subject.bucket(0).len(), 3);
+
+        subject.bucket(0).prune(1);
+        assert_eq!(subject.len(), 3);
+        assert_eq!(subject.bucket(0).len(), 2);
+
+        assert_eq!(subject.bucket(0).bucket(2).pop_min(), Some("fifth"));
+        assert_eq!(subject.len(), 2);
+
+        subject.bucket(0).prune(2);
+        assert_eq!(subject.len(), 1);
+        assert_eq!(subject.bucket(0).is_empty(), true);
+
+        subject.prune(1);
+        assert_eq!(subject.len(), 0);
+
+        assert_eq!(subject.is_empty(), true);
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), None);
     }
 }

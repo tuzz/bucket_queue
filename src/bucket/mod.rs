@@ -12,6 +12,8 @@ pub trait Bucket {
     fn len_bucket(&self) -> usize;
 
     fn is_empty_bucket(&self) -> bool;
+
+    fn clear(&mut self);
 }
 
 // -----------------------------------------------------------------
@@ -34,6 +36,10 @@ impl<T> Bucket for VecDeque<T> {
     fn is_empty_bucket(&self) -> bool {
         self.is_empty()
     }
+
+    fn clear(&mut self) {
+        self.clear()
+    }
 }
 
 impl<T> Bucket for Vec<T> {
@@ -49,5 +55,9 @@ impl<T> Bucket for Vec<T> {
 
     fn is_empty_bucket(&self) -> bool {
         self.is_empty()
+    }
+
+    fn clear(&mut self) {
+        self.clear()
     }
 }

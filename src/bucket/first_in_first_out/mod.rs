@@ -32,10 +32,10 @@ impl<'a, Q, B> FirstInFirstOutBucket for DeferredBucket<'a, Q, B>
           B: FirstInFirstOutBucket,
 {
     fn enqueue(&mut self, item: Self::Item) {
-        self.add().enqueue(item)
+        self.adding().enqueue(item)
     }
 
     fn dequeue(&mut self) -> Option<Self::Item> {
-        self.remove()?.dequeue()
+        self.removing()?.dequeue()
     }
 }
