@@ -5,3 +5,11 @@ authors = ["Chris Patuzzo <chris@patuzzo.co.uk>"]
 edition = "2018"
 
 [dependencies]
+
+[dev-dependencies]
+bencher = "0.1.5"
+rand = "0.6"
+
+[[bench]]
+name = "bucket_queue"
+harness = false
