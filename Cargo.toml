@@ -1,8 +1,16 @@
 [package]
 name = "bucket_queue"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Chris Patuzzo <chris@patuzzo.co.uk>"]
 edition = "2018"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/tuzz/bucket_queue"
+documentation = "https://github.com/tuzz/bucket_queue"
+homepage = "https://crates.io/crates/bucket_queue"
+description = "A Bucket Queue data structure that can be used as a Priority Queue."
+keywords = ["bucket", "queue", "priority"]
+categories = ["data-structures", "algorithms"]
 
 [dependencies]
 
