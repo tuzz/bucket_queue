@@ -136,18 +136,13 @@ impl<'a, Q, B, C> Queue<C> for DeferredBucket<'a, Q, B>
         self.peeking().map_or(true, |q| q.is_empty_queue())
     }
 
-    fn prune(&mut self, priority: usize) {
-        let queue_to_prune = match self.pruning() {
-            Some(queue) => queue,
-            None => return,
-        };
+    fn prune(&mut self, priority: usize) -> Option<C> {
+        let queue = self.pruning()?;
+        let bucket_size = queue.bucket_for_peeking(priority)?.len_bucket();
+        let option = queue.prune(priority);
 
-        let bucket_size = match queue_to_prune.bucket_for_peeking(priority) {
-            Some(bucket) => bucket.len_bucket(),
-            None => return,
-        };
-
-        queue_to_prune.prune(priority);
         self.pruned(bucket_size);
+
+        option
     }
 }

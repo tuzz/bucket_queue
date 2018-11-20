@@ -1,4 +1,5 @@
 use super::*;
+use std::mem::replace;
 
 pub struct BucketQueue<B: Bucket, I: Index = SimpleIndex> {
     buckets: Vec<Option<B>>,
@@ -82,14 +83,13 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.is_empty()
     }
 
-    fn prune(&mut self, priority: usize) {
-        if let Some(Some(bucket)) = self.buckets.get_mut(priority) {
-            let bucket_size = bucket.len_bucket();
+    fn prune(&mut self, priority: usize) -> Option<B> {
+        let bucket_size = self.buckets.get(priority)?.as_ref()?.len_bucket();
+        let bucket = replace(&mut self.buckets[priority], None);
 
-            bucket.clear();
+        self.items_pruned(bucket_size, priority);
 
-            self.items_pruned(bucket_size, priority);
-        }
+        bucket
     }
 }
 

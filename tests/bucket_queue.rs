@@ -417,6 +417,21 @@ mod prune {
         assert_eq!(subject.pop_min(), Some("second"));
         assert_eq!(subject.pop_min(), None);
     }
+
+    #[test]
+    fn it_returns_the_bucket_of_removed_items() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        let bucket = subject.prune(0);
+        assert_eq!(bucket.unwrap(), &["first", "third"]);
+
+        let bucket = subject.prune(0);
+        assert_eq!(bucket, None);
+    }
 }
 
 mod deferrals {
@@ -522,9 +537,13 @@ mod nested_bucket_queue {
         subject.bucket(0).push("third", 1);
         subject.bucket(1).push("fourth", 0);
 
-        subject.bucket(0).prune(1);
+        let bucket = subject.bucket(0).prune(1);
 
         assert_eq!(subject.len(), 2);
+        assert_eq!(bucket.unwrap(), &["second", "third"]);
+
+        let bucket = subject.bucket(0).prune(1);
+        assert_eq!(bucket, None);
 
         assert_eq!(subject.min_bucket().pop_min(), Some("first"));
         assert_eq!(subject.min_bucket().pop_min(), Some("fourth"));
@@ -561,9 +580,13 @@ mod nested_bucket_queue {
         subject.bucket(0).bucket(2).bucket(0).push("fifth");
         subject.bucket(1).bucket(0).bucket(0).push("sixth");
 
-        subject.bucket(0).bucket(1).prune(0);
+        let bucket = subject.bucket(0).bucket(1).prune(0);
         assert_eq!(subject.len(), 4);
         assert_eq!(subject.bucket(0).len(), 3);
+        assert_eq!(bucket.unwrap(), &["first", "second"]);
+
+        let bucket = subject.bucket(0).bucket(1).prune(0);
+        assert_eq!(bucket, None);
 
         subject.bucket(0).prune(1);
         assert_eq!(subject.len(), 3);
@@ -576,8 +599,10 @@ mod nested_bucket_queue {
         assert_eq!(subject.len(), 1);
         assert_eq!(subject.bucket(0).is_empty(), true);
 
-        subject.prune(1);
+        let mut bucket_queue = subject.prune(1).unwrap();
         assert_eq!(subject.len(), 0);
+        assert_eq!(bucket_queue.len(), 1);
+        assert_eq!(bucket_queue.min_bucket().pop_min(), Some("sixth"));
 
         assert_eq!(subject.is_empty(), true);
         assert_eq!(subject.min_bucket().min_bucket().pop_min(), None);

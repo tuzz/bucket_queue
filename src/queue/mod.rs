@@ -20,5 +20,5 @@ pub trait Queue<B: Bucket> {
     fn len_queue(&self) -> usize;
     fn is_empty_queue(&self) -> bool;
 
-    fn prune(&mut self, priority: usize);
+    fn prune(&mut self, priority: usize) -> Option<B>;
 }
