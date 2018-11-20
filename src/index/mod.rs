@@ -8,6 +8,7 @@ pub trait Index {
     fn add<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>);
     fn remove<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>);
 
+    fn added_n<B: Bucket>(&mut self, n: usize, priority: usize, buckets: &Vec<Option<B>>);
     fn removed_n<B: Bucket>(&mut self, n: usize, priority: usize, buckets: &Vec<Option<B>>);
 
     fn min(&self) -> Option<usize>;

@@ -381,7 +381,7 @@ mod clear {
     }
 
     #[test]
-    fn it_can_clear_deferred_buckets() { // This is equivalent to pruning.
+    fn it_can_clear_deferred_buckets() { // This is equivalent to replacing.
         let mut subject = Subject::<Vec<&'static str>>::new();
 
         subject.push("first", 0);
@@ -398,18 +398,37 @@ mod clear {
     }
 }
 
-mod prune {
+mod replace {
     use super::*;
 
     #[test]
-    fn it_removes_all_items_from_a_bucket_in_the_bucket_queue() {
+    fn it_replaces_a_bucket_in_the_bucket_queue() {
         let mut subject = Subject::<Vec<&'static str>>::new();
 
         subject.push("first", 0);
         subject.push("second", 1);
         subject.push("third", 0);
 
-        subject.prune(0);
+        let bucket = vec!["fourth"];
+        subject.replace(0, Some(bucket));
+
+        assert_eq!(subject.len(), 2);
+        assert_eq!(subject.is_empty(), false);
+
+        assert_eq!(subject.pop_min(), Some("fourth"));
+        assert_eq!(subject.pop_min(), Some("second"));
+        assert_eq!(subject.pop_min(), None);
+    }
+
+    #[test]
+    fn it_can_remove_a_bucket_by_replacing_it_with_none() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        subject.replace(0, None);
 
         assert_eq!(subject.len(), 1);
         assert_eq!(subject.is_empty(), false);
@@ -419,18 +438,41 @@ mod prune {
     }
 
     #[test]
-    fn it_returns_the_bucket_of_removed_items() {
+    fn it_returns_the_bucket_of_replaced_items() {
         let mut subject = Subject::<Vec<&'static str>>::new();
 
         subject.push("first", 0);
         subject.push("second", 1);
         subject.push("third", 0);
 
-        let bucket = subject.prune(0);
+        let bucket = subject.replace(0, None);
         assert_eq!(bucket.unwrap(), &["first", "third"]);
 
-        let bucket = subject.prune(0);
+        let bucket = subject.replace(0, None);
         assert_eq!(bucket, None);
+    }
+
+    #[test]
+    fn it_can_replace_a_bucket_that_doesnt_exist_yet() {
+        let mut subject = Subject::<Vec<&'static str>>::new();
+
+        subject.push("first", 0);
+        subject.push("second", 1);
+        subject.push("third", 0);
+
+        let replacement = vec!["fourth"];
+        let replaced = subject.replace(3, Some(replacement));
+
+        assert_eq!(replaced, None);
+
+        assert_eq!(subject.len(), 4);
+        assert_eq!(subject.is_empty(), false);
+
+        assert_eq!(subject.pop_min(), Some("third"));
+        assert_eq!(subject.pop_min(), Some("first"));
+        assert_eq!(subject.pop_min(), Some("second"));
+        assert_eq!(subject.pop_min(), Some("fourth"));
+        assert_eq!(subject.pop_min(), None);
     }
 }
 
@@ -529,7 +571,7 @@ mod nested_bucket_queue {
     }
 
     #[test]
-    fn it_supports_pruning_nested_buckets_via_deferrals() {
+    fn it_supports_replacing_nested_buckets_via_deferrals() {
         let mut subject = Subject::<Subject<Vec<&'static str>>>::new();
 
         subject.bucket(0).push("first", 0);
@@ -537,16 +579,21 @@ mod nested_bucket_queue {
         subject.bucket(0).push("third", 1);
         subject.bucket(1).push("fourth", 0);
 
-        let bucket = subject.bucket(0).prune(1);
+        let bucket = subject.bucket(0).replace(1, None);
 
         assert_eq!(subject.len(), 2);
         assert_eq!(bucket.unwrap(), &["second", "third"]);
 
-        let bucket = subject.bucket(0).prune(1);
+        let bucket = subject.bucket(0).replace(1, None);
+        assert_eq!(bucket, None);
+
+        let replacement = vec!["fifth"];
+        subject.bucket(2).replace(2, Some(replacement));
         assert_eq!(bucket, None);
 
         assert_eq!(subject.min_bucket().pop_min(), Some("first"));
         assert_eq!(subject.min_bucket().pop_min(), Some("fourth"));
+        assert_eq!(subject.min_bucket().pop_min(), Some("fifth"));
         assert_eq!(subject.min_bucket().pop_min(), None);
     }
 
@@ -570,7 +617,7 @@ mod nested_bucket_queue {
     }
 
     #[test]
-    fn it_can_prune_arbitrarily_nested_buckets_via_deferrals() {
+    fn it_can_replace_arbitrarily_nested_buckets_via_deferrals() {
         let mut subject = Subject::<Subject<Subject<Vec<&'static str>>>>::new();
 
         subject.bucket(0).bucket(1).bucket(0).push("first");
@@ -580,31 +627,26 @@ mod nested_bucket_queue {
         subject.bucket(0).bucket(2).bucket(0).push("fifth");
         subject.bucket(1).bucket(0).bucket(0).push("sixth");
 
-        let bucket = subject.bucket(0).bucket(1).prune(0);
+        let bucket = subject.bucket(0).bucket(1).replace(0, None);
+        assert_eq!(bucket.unwrap(), &["first", "second"]);
         assert_eq!(subject.len(), 4);
         assert_eq!(subject.bucket(0).len(), 3);
-        assert_eq!(bucket.unwrap(), &["first", "second"]);
 
-        let bucket = subject.bucket(0).bucket(1).prune(0);
+        let bucket = subject.bucket(0).bucket(1).replace(0, None);
         assert_eq!(bucket, None);
 
-        subject.bucket(0).prune(1);
-        assert_eq!(subject.len(), 3);
-        assert_eq!(subject.bucket(0).len(), 2);
+        let mut replacement = Subject::<Vec<&'static str>>::new();
+        replacement.bucket(1).push("seventh");
+        replacement.bucket(2).push("eighth");
 
-        assert_eq!(subject.bucket(0).bucket(2).pop_min(), Some("fifth"));
-        assert_eq!(subject.len(), 2);
+        let bucket = subject.bucket(1).replace(0, Some(replacement)); // TODO switch args
+        assert_eq!(bucket.unwrap().pop_min(), Some("sixth"));
 
-        subject.bucket(0).prune(2);
-        assert_eq!(subject.len(), 1);
-        assert_eq!(subject.bucket(0).is_empty(), true);
-
-        let mut bucket_queue = subject.prune(1).unwrap();
-        assert_eq!(subject.len(), 0);
-        assert_eq!(bucket_queue.len(), 1);
-        assert_eq!(bucket_queue.min_bucket().pop_min(), Some("sixth"));
-
-        assert_eq!(subject.is_empty(), true);
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), Some("third"));
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), Some("fifth"));
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), Some("fourth"));
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), Some("seventh"));
+        assert_eq!(subject.min_bucket().min_bucket().pop_min(), Some("eighth"));
         assert_eq!(subject.min_bucket().min_bucket().pop_min(), None);
     }
 }

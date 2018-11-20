@@ -19,16 +19,12 @@ impl<B: Bucket, I: Index> BucketQueue<B, I> {
         self.index.is_empty()
     }
 
-    fn grow(&mut self, priority: usize) {
+    fn grow(&mut self, priority: usize) -> &mut Option<B> {
         for _ in self.buckets.len()..=priority {
             self.buckets.push(None);
         }
-    }
 
-    fn get_bucket_unchecked(&mut self, priority: usize) -> &mut Option<B> {
-        unsafe {
-            self.buckets.get_unchecked_mut(priority)
-        }
+        &mut self.buckets[priority]
     }
 }
 
@@ -48,10 +44,7 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
     fn bucket_for_adding(&mut self, priority: usize) -> &mut B {
         self.index.add(priority, &self.buckets);
 
-        self.grow(priority);
-
-        self.get_bucket_unchecked(priority)
-            .get_or_insert_with(|| B::new_bucket())
+        self.grow(priority).get_or_insert_with(|| B::new_bucket())
     }
 
     fn bucket_for_removing(&mut self, priority: usize) -> Option<&mut B> {
@@ -64,15 +57,19 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.buckets.get(priority)?.as_ref()
     }
 
-    fn bucket_for_pruning(&mut self, priority: usize) -> Option<&mut B> {
+    fn bucket_for_replacing(&mut self, priority: usize) -> &mut Option<B> {
         // The index is not automatically updated as there is no way to tell how
-        // many items will be removed. Instead, #items_pruned must be called.
+        // many items will be replaced. Instead, #items_replaced must be called.
 
-        self.buckets.get_mut(priority)?.as_mut()
+        self.grow(priority)
     }
 
-    fn items_pruned(&mut self, number_of_items: usize, priority: usize) {
-        self.index.removed_n(number_of_items, priority, &self.buckets);
+    fn items_replaced(&mut self, priority: usize, old_size: usize, new_size: usize) {
+        if new_size > old_size {
+            self.index.added_n(new_size - old_size, priority, &self.buckets);
+        } else if new_size < old_size {
+            self.index.removed_n(old_size - new_size, priority, &self.buckets);
+        }
     }
 
     fn len_queue(&self) -> usize {
@@ -83,13 +80,16 @@ impl<B: Bucket> Queue<B> for BucketQueue<B> {
         self.is_empty()
     }
 
-    fn prune(&mut self, priority: usize) -> Option<B> {
-        let bucket_size = self.buckets.get(priority)?.as_ref()?.len_bucket();
-        let bucket = replace(&mut self.buckets[priority], None);
+    fn replace(&mut self, priority: usize, replacement: Option<B>) -> Option<B> {
+        let existing = self.grow(priority);
 
-        self.items_pruned(bucket_size, priority);
+        let old_size = existing.as_ref().map_or(0, |b| b.len_bucket());
+        let new_size = replacement.as_ref().map_or(0, |b| b.len_bucket());
 
-        bucket
+        let replaced = replace(existing, replacement);
+        self.items_replaced(priority, old_size, new_size);
+
+        replaced
     }
 }
 

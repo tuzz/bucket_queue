@@ -42,13 +42,14 @@ impl<'a, Q, B> DeferredBucket<'a, Q, B>
         self.queue.bucket_for_peeking(self.priority)
     }
 
-    pub fn pruning(&mut self) -> Option<&mut B> {
-        self.queue.bucket_for_pruning(self.priority)
+    pub fn replacing(&mut self) -> &mut B {
+        self.queue.bucket_for_replacing(self.priority)
+            .get_or_insert_with(|| B::new_bucket())
     }
 
-    // Updates queue's index to record how many items were pruned.
-    pub fn pruned(&mut self, number_of_items: usize) {
-        self.queue.items_pruned(number_of_items, self.priority);
+    // Updates queue's index to record how many items were replaced.
+    pub fn replaced(&mut self, old_size: usize, new_size: usize) {
+        self.queue.items_replaced(self.priority, old_size, new_size);
     }
 
     fn panic_if_consumed(&mut self) {
@@ -79,7 +80,7 @@ impl<'a, Q, B> Bucket for DeferredBucket<'a, Q, B>
     }
 
     fn clear(&mut self) {
-        self.queue.prune(self.priority);
+        self.queue.replace(self.priority, None);
     }
 }
 
@@ -116,16 +117,16 @@ impl<'a, Q, B, C> Queue<C> for DeferredBucket<'a, Q, B>
         self.peeking()?.bucket_for_peeking(priority)
     }
 
-    fn bucket_for_pruning(&mut self, priority: usize) -> Option<&mut C> {
-        self.pruning()?.bucket_for_pruning(priority)
+    fn bucket_for_replacing(&mut self, priority: usize) -> &mut Option<C> {
+        self.replacing().bucket_for_replacing(priority)
     }
 
-    fn items_pruned(&mut self, number_of_items: usize, priority: usize) {
+    fn items_replaced(&mut self, priority: usize, old_size: usize, new_size: usize) {
         // Update the parent queue's index.
-        self.pruned(number_of_items);
+        self.replaced(old_size, new_size);
 
         // Update the current queue's index.
-        self.pruning().map(|q| q.items_pruned(number_of_items, priority));
+        self.replacing().items_replaced(priority, old_size, new_size);
     }
 
     fn len_queue(&self) -> usize {
@@ -136,13 +137,16 @@ impl<'a, Q, B, C> Queue<C> for DeferredBucket<'a, Q, B>
         self.peeking().map_or(true, |q| q.is_empty_queue())
     }
 
-    fn prune(&mut self, priority: usize) -> Option<C> {
-        let queue = self.pruning()?;
-        let bucket_size = queue.bucket_for_peeking(priority)?.len_bucket();
-        let option = queue.prune(priority);
+    fn replace(&mut self, priority: usize, replacement: Option<C>) -> Option<C> {
+        let queue = self.replacing();
+        let existing = queue.bucket_for_replacing(priority);
 
-        self.pruned(bucket_size);
+        let old_size = existing.as_ref().map_or(0, |b| b.len_bucket());
+        let new_size = replacement.as_ref().map_or(0, |b| b.len_bucket());
 
-        option
+        let replaced = queue.replace(priority, replacement);
+        self.replaced(old_size, new_size);
+
+        replaced
     }
 }

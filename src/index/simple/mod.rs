@@ -13,11 +13,8 @@ impl Index for SimpleIndex {
         Self { len: 0, min: None, max: None }
     }
 
-    fn add<B: Bucket>(&mut self, priority: usize, _: &Vec<Option<B>>) {
-        self.len += 1;
-
-        self.min = Self::compare(cmp::min, self.min, priority);
-        self.max = Self::compare(cmp::max, self.max, priority);
+    fn add<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>) {
+        self.added_n(1, priority, buckets);
     }
 
     fn remove<B: Bucket>(&mut self, priority: usize, buckets: &Vec<Option<B>>) {
@@ -26,6 +23,13 @@ impl Index for SimpleIndex {
         if Self::size_of_bucket(priority, buckets) == 1 {
             self.set_new_min_and_max(priority, buckets);
         }
+    }
+
+    fn added_n<B: Bucket>(&mut self, n: usize, priority: usize, _: &Vec<Option<B>>) {
+        self.len += n;
+
+        self.min = Self::compare(cmp::min, self.min, priority);
+        self.max = Self::compare(cmp::max, self.max, priority);
     }
 
     fn removed_n<B: Bucket>(&mut self, n: usize, priority: usize, buckets: &Vec<Option<B>>) {

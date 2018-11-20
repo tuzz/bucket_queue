@@ -152,8 +152,15 @@ fn main() {
     assert_eq!(queue.max_priority(), Some(2));
 
     // Remove all items from bucket 1:
-    queue.prune(1);
+    queue.replace(1, None);
     assert_eq!(queue.len(), 2);
+
+    // Create a replacement for bucket 0:
+    let new = VecDeque::from(vec!["fix lints"]);
+
+    // Replace the contents of bucket 0:
+    let old = queue.replace(0, Some(new));
+    assert_eq!(old.unwrap(), &["fix tests"]);
 
     // Clear all items from the queue:
     queue.clear();
@@ -213,7 +220,7 @@ queue.bucket(1).bucket(2).enqueue("documentation");
 - So are these:
 
 ```rust
-queue.prune(0);
+queue.replace(0, None);
 queue.bucket(0).clear();
 ```
 
